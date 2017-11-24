@@ -4,6 +4,8 @@
    
 </template>
 <script>
+import {mapState,mapActions} from 'vuex'  
+
 import ol from "openlayers";
 import ol_Map from "ol/map";
 import ol_View from "ol/view";
@@ -48,10 +50,12 @@ export default {
     };
   },
   methods: {
+    ...mapActions(['initMap2']),
     onLiClick(value) {
       alert(value);
     },
     initMap() {
+      let self = this;
       this.$store.state.mapObj = new ol_Map({
         target: "map",
         layers: [
@@ -61,8 +65,10 @@ export default {
         ],
         view: new ol_View(this.mapoptions || {})
       });
-      this.$store.state.mapObj .on("click", function(evt) {
+      this.$store.state.mapObj.on("click", function(evt) {
         console.log(evt.coordinate);
+        console.log(this.methods)
+        self.initMap2();
       });
     },
     addSubwayStation() {
@@ -157,8 +163,9 @@ export default {
   },
   mounted() {
     this.initMap();
-     this.addSubwayStation();
-     console.log(this.$store.state.mapObj.getLayers())
+    console.log(this.$store.dispatch)
+    this.addSubwayStation();
+    console.log(this.$store.state.mapObj.getLayers())
   }
 };
 </script>
