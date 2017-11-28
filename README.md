@@ -20,4 +20,4 @@ npm run build --report
 
 For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
 
-代码比较乱，仅仅上传用于暂存
+Already fixed bug in vuex.This code is only a test for combining vuex with Openlayers.
