@@ -1,5 +1,7 @@
 export default {
-    initMap2({commit}){
-        alert(123);
-    }
+  initMap({
+    commit
+  }, mapOptions) {
+    commit('initMap', mapOptions);
+  }
 }
