@@ -1,10 +1,9 @@
 <template>
    <div id="map">
    </div>
-   
 </template>
 <script>
-import {mapState,mapActions} from 'vuex'  
+import Vue from "vue";
 
 import ol from "openlayers";
 import ol_Map from "ol/map";
@@ -25,10 +24,16 @@ import ol_style_style from "ol/style/style";
 import ol_style_fill from "ol/style/fill";
 import ol_style_stroke from "ol/style/stroke";
 import ol_style_circle from "ol/style/circle";
+import ol_style_text from "ol/style/text";
+import ol_style_icon from "ol/style/icon";
 
 import ol_geom_point from "ol/geom/point";
 
 import ol_feature from "ol/feature";
+
+import ol_overlay from "ol/overlay";
+
+import ol_interaction_select from "ol/interaction/select";
 
 import proj4 from "proj4";
 
@@ -43,20 +48,35 @@ export default {
   data() {
     return {
       map: undefined,
-      mapserverUrl:
+      stationUrl:
         "http://125.70.9.221:8020/cdmap/rest/services/mobile/mobile_metro/MapServer/0/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&f=pjson",
       featureUrl:
         "https://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Petroleum/KSFields/FeatureServer/0//query?objectIds=&where=1%3D1&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=*&returnGeometry=true&outSR=&returnCountOnly=false&returnIdsOnly=false&f=pjson"
     };
   },
   methods: {
-    ...mapActions(['initMap2']),
-    onLiClick(value) {
-      alert(value);
+    defineProjection() {
+      proj4.defs("EPSG:4490", "+proj=longlat +ellps=GRS80 +no_defs");
+
+      var projection_4490 = new ol_proj_Projection({
+        code: "EPSG:4490",
+        units: "degrees"
+      });
+
+      ol_proj.addProjection(projection_4490);
+      ol_proj.addCoordinateTransforms(
+        "EPSG:3857",
+        "EPSG:4490",
+        function(coordinate) {
+          return proj4("EPSG:3857", "EPSG:4490", coordinate);
+        },
+        function(coordinate) {
+          return proj4("EPSG:4490", "EPSG:3857", coordinate);
+        }
+      );
     },
     initMap() {
-      let self = this;
-      this.$store.state.mapObj = new ol_Map({
+      Vue.prototype.mapInstance = new ol_Map({
         target: "map",
         layers: [
           new ol_layer_Tile({
@@ -65,71 +85,20 @@ export default {
         ],
         view: new ol_View(this.mapoptions || {})
       });
-      this.$store.state.mapObj.on("click", function(evt) {
-        console.log(evt.coordinate);
-        console.log(this.methods)
-        self.initMap2();
-      });
+      this.map = Vue.prototype.mapInstance;
     },
     addSubwayStation() {
-      var url = this.mapserverUrl;
-      this.$http.jsonp(url).then(
+      this.$http.jsonp(this.stationUrl).then(
         response => {
           if (response.ok) {
             var vectorSource = new ol_source_Vector();
             var esrijsonFormat = new ol_format_EsriJSON();
             var features = esrijsonFormat.readFeatures(response.body, {
-              dataProjection: "EPSG:3857"
+              featureProjection: "EPSG:3857",
+              dataProjection: "EPSG:4490"
             });
 
-            // features = features.map(feature => {
-            //   var coors = ol_proj.transform('')
-            // });
-            // vectorSource.addFeatures(features);
-
-            // var point = new ol_geom_point([
-            //   11585500.144589726,
-            //   3588447.192817837
-            // ]);
-
-            // var pointFeature = new ol_feature({
-            //   geometry: point
-            // });
-
-            proj4.defs("EPSG:4490", "+proj=longlat +ellps=GRS80 +no_defs");
-            console.log(proj4("EPSG:4490"));
-
-            var projection_4490 = new ol_proj_Projection({
-              code: "EPSG:4490",
-              units: "degrees"
-            });
-
-            ol_proj.addProjection(projection_4490);
-
-            ol_proj.addCoordinateTransforms(
-              "EPSG:3857",
-              "EPSG:4490",
-              function(coordinate) {
-                return proj4("EPSG:3857", "EPSG:4490", coordinate);
-              },
-              function(coordinate) {
-                return proj4("EPSG:4490", "EPSG:3857", coordinate);
-              }
-            );
-
-            var coors = ol_proj.transform(
-              [104.04775654679611, 30.667707160968234],
-              "EPSG:4490",
-              "EPSG:3857"
-            );
-
-            var point = new ol_geom_point(coors);
-            console.log(coors);
-            var pointFeature = new ol_feature({
-              geometry: point
-            });
-
-            vectorSource.addFeature(pointFeature);
+            vectorSource.addFeatures(features);
 
             var vectorlayer = new ol_layer_Vector({
               source: vectorSource,
@@ -142,17 +111,38 @@ export default {
                     color: "red",
                     width: 5
                   }),
-                  image: new ol_style_circle({
-                    radius: 5,
+                  image: new ol_style_icon({
+                    src: require("./assets/station.png")
+                  }),
+                  text: new ol_style_text({
+                    text: feature.get("地铁站点名称"),
+                    offsetY: 25,
                     fill: new ol_style_fill({
-                      color: "yellow"
+                      color: "white"
                     }),
-                    stroke: new ol_style_stroke({ color: "red", width: 1 })
+                    stroke: new ol_style_stroke({
+                      color: "black",
+                      width: 3
+                    })
                   })
                 });
               }
             });
-            this.$store.state.mapObj.addLayer(vectorlayer);
+
+            this.map.addLayer(vectorlayer);
+
+            var select = new ol_interaction_select({
+              style: undefined
+            });
+            var popup = new ol_overlay({
+              element: document.getElementById("popup")
+            });
+            this.map.addOverlay(popup);
+            this.map.addInteraction(select);
+            select.on("select", function(e) {
+              var station = e.target.getFeatures().item(0);
+              station && alert(station.get("地铁站点名称"));
+            });
           }
         },
         error => {
@@ -162,10 +152,9 @@ export default {
     }
   },
   mounted() {
+    this.defineProjection();
     this.initMap();
-    console.log(this.$store.dispatch)
     this.addSubwayStation();
-    console.log(this.$store.state.mapObj.getLayers())
   }
 };
 </script>
