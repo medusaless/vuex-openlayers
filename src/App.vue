@@ -15,6 +15,7 @@ import ol_proj_Projection from "ol/proj/projection";
 import ol_source_Vector from "ol/source/vector";
 import ol_source_OSM from "ol/source/osm";
 
+import myVectorLayer from "./components/myvectorlayer";
 import ol_layer_Vector from "ol/layer/vector";
 import ol_layer_Tile from "ol/layer/tile";
 
@@ -100,7 +101,7 @@ export default {
 
             vectorSource.addFeatures(features);
 
-            var vectorlayer = new ol_layer_Vector({
+            var vectorlayer = new myVectorLayer({
               source: vectorSource,
               style: function(feature, resolution) {
                 return new ol_style_style({
@@ -130,16 +131,7 @@ export default {
             });
 
             this.map.addLayer(vectorlayer);
-
-            var select = new ol_interaction_select({
-              style: undefined
-            });
-            var popup = new ol_overlay({
-              element: document.getElementById("popup")
-            });
-            this.map.addOverlay(popup);
-            this.map.addInteraction(select);
-            select.on("select", function(e) {
+            vectorlayer.addFeatureEvent(this.map, "select", function(e) {
               var station = e.target.getFeatures().item(0);
               station && alert(station.get("地铁站点名称"));
             });
