@@ -38,6 +38,8 @@ import ol_interaction_select from "ol/interaction/select";
 
 import proj4 from "proj4";
 
+import tip from "./components/tip.vue";
+
 import "ol/ol.css";
 
 export default {
@@ -48,6 +50,7 @@ export default {
   },
   data() {
     return {
+      stationName: "",
       map: undefined,
       stationUrl:
         "http://125.70.9.221:8020/cdmap/rest/services/mobile/mobile_metro/MapServer/0/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=true&maxAllowableOffset=&geometryPrecision=&outSR=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&f=pjson",
@@ -88,65 +91,88 @@ export default {
       });
       this.map = Vue.prototype.mapInstance;
     },
-    addSubwayStation() {
-      this.$http.jsonp(this.stationUrl).then(
-        response => {
-          if (response.ok) {
-            var vectorSource = new ol_source_Vector();
-            var esrijsonFormat = new ol_format_EsriJSON();
-            var features = esrijsonFormat.readFeatures(response.body, {
-              featureProjection: "EPSG:3857",
-              dataProjection: "EPSG:4490"
-            });
-
-            vectorSource.addFeatures(features);
-
-            var vectorlayer = new myVectorLayer({
-              source: vectorSource,
-              style: function(feature, resolution) {
-                return new ol_style_style({
+    async getVectorSource(type) {
+      var vectorSource;
+      switch (type) {
+        case "STATION":
+          await this.$http.jsonp(this.stationUrl).then(
+            response => {
+              response.ok && (vectorSource = response.body);
+            },
+            error => {
+              console.log("error");
+            }
+          );
+          break;
+      }
+      return vectorSource;
+    },
+    parseVectorSource(type, originSource) {
+      var source;
+      switch (type) {
+        case "STATION":
+          var esrijsonFormat = new ol_format_EsriJSON();
+          var features = esrijsonFormat.readFeatures(originSource, {
+            featureProjection: "EPSG:3857",
+            dataProjection: "EPSG:4490"
+          });
+          source = new ol_source_Vector();
+          source.addFeatures(features);
+          break;
+      }
+      return source;
+    },
+    drawVector(type, vectorSource) {
+      debugger;
+      switch (type) {
+        case "STATION":
+          var vectorlayer = new myVectorLayer({
+            source: vectorSource,
+            style: function(feature, resolution) {
+              return new ol_style_style({
+                fill: new ol_style_fill({
+                  color: "red"
+                }),
+                stroke: new ol_style_stroke({
+                  color: "red",
+                  width: 5
+                }),
+                image: new ol_style_icon({
+                  src: require("./assets/station.png")
+                }),
+                text: new ol_style_text({
+                  text: feature.get("地铁站点名称"),
+                  offsetY: 25,
                   fill: new ol_style_fill({
-                    color: "red"
+                    color: "white"
                   }),
                   stroke: new ol_style_stroke({
-                    color: "red",
-                    width: 5
-                  }),
-                  image: new ol_style_icon({
-                    src: require("./assets/station.png")
-                  }),
-                  text: new ol_style_text({
-                    text: feature.get("地铁站点名称"),
-                    offsetY: 25,
-                    fill: new ol_style_fill({
-                      color: "white"
-                    }),
-                    stroke: new ol_style_stroke({
-                      color: "black",
-                      width: 3
-                    })
+                    color: "black",
+                    width: 3
                   })
-                });
-              }
-            });
+                })
+              });
+            }
+          });
 
-            this.map.addLayer(vectorlayer);
-            vectorlayer.addFeatureEvent(this.map, "select", function(e) {
-              var station = e.target.getFeatures().item(0);
-              station && alert(station.get("地铁站点名称"));
-            });
-          }
-        },
-        error => {
-          console.log(error);
-        }
-      );
+          this.map.addLayer(vectorlayer);
+          vectorlayer.addFeatureEvent(this.map, "select", function(e) {
+            var station = e.target.getFeatures().item(0);
+            station && alert(station.get('地铁站点名称'))
+          });
+          break;
+      }
+    },
+    async drawStations() {
+      var source = await this.getVectorSource("STATION");
+      var stationVectors = this.parseVectorSource('STATION',source);
+      this.drawVector("STATION", stationVectors);
     }
   },
   mounted() {
     this.defineProjection();
     this.initMap();
-    this.addSubwayStation();
+    this.drawStations();
   }
 };
 </script>

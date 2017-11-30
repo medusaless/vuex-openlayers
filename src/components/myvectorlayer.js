@@ -33,7 +33,6 @@ ol_layer_vector.prototype.addFeatureEvent = function (map, eventType, callback) 
 
     // 1. 为图层绑定相应的事件
     // 2. 判断点击的feature是否属于该vectorlayer，如果属于该vectorlayer才调用回调函数
-     
     let select = new ol_interaction_select();
     select.on(eventType, (e) => {
       let featureTargets = e.target.getFeatures();
@@ -42,7 +41,7 @@ ol_layer_vector.prototype.addFeatureEvent = function (map, eventType, callback) 
           return feature._featureLayerId === _id;
         });
         if (isInThisLayer) {
-           callback(e);
+           callback(e)
         }
       }
     });
