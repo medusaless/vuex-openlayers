@@ -1,5 +1,6 @@
 <template>
    <div id="map">
+     <drawingtool :types="['Rectangle','LineString','Polygon']" :map-prop="map" @ondrawend="onDrawendHandler"></drawingtool>
    </div>
 </template>
 <script>
@@ -38,15 +39,19 @@ import ol_interaction_select from "ol/interaction/select";
 
 import proj4 from "proj4";
 
-import tip from "./components/tip.vue";
+import drawingtool from "./components/drawingtool/drawingtool.vue";
 
 import "ol/ol.css";
+import "./css/main.css";
 
 export default {
   props: {
     mapoptions: {
       type: Object
     }
+  },
+  components:{
+    drawingtool
   },
   data() {
     return {
@@ -123,7 +128,6 @@ export default {
       return source;
     },
     drawVector(type, vectorSource) {
-      debugger;
       switch (type) {
         case "STATION":
           var vectorlayer = new myVectorLayer({
@@ -138,7 +142,7 @@ export default {
                   width: 5
                 }),
                 image: new ol_style_icon({
-                  src: require("./assets/station.png")
+                  src: "/static/images/station.png"
                 }),
                 text: new ol_style_text({
                   text: feature.get("地铁站点名称"),
@@ -167,6 +171,9 @@ export default {
       var source = await this.getVectorSource("STATION");
       var stationVectors = this.parseVectorSource('STATION',source);
       this.drawVector("STATION", stationVectors);
+    },
+    onDrawendHandler(feature){
+      console.log(feature);
     }
   },
   mounted() {
