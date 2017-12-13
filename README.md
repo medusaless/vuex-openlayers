@@ -1,6 +1,5 @@
-# vue_test
 
-> A Vue.js project
+vuex+openlayers，仅供自学
 
 ## Build Setup
 
@@ -17,7 +16,3 @@ npm run build
 # build for production and view the bundle analyzer report
 npm run build --report
 ```
-
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
-
-Already fixed bug in vuex.This code is only a test for combining vuex with Openlayers.
